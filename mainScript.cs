@@ -15,14 +15,12 @@ public class mainScript : Node2D
     public override void _Ready()
     {
         ch = (chat)GetNode("MarginContainer/VBoxContainer/chat");
-        ch.ClearDialog();
+
         websocket = (WebSocketThread)GetNode("websocket");
         btn = (Button)GetNode("MarginContainer/VBoxContainer/HBoxContainer/Button");
         isConnected = false;
         wsURI = (Godot.TextEdit)GetNode("MarginContainer/VBoxContainer/HBoxContainer/TextEdit");
-        //var foo =               GetNode("MarginContainer/VBoxContainer/HBoxContainer/TextEdit");
         ch.Println(wsURI.GetType().ToString());
-        //wsURI.Text;
 
         // update state of button
         updateButton();
@@ -30,8 +28,8 @@ public class mainScript : Node2D
     }
 
     private void startWs() {
+        wsThread.Start(websocket, "ConnectToWs");
         //wsThread.Start(websocket, "ConnectToWs", wsURI.Text, 1);
-        wsThread.Start(websocket, "ConnectToWs", wsURI.Text, 1);
     }
 
     public string GetConnectionURI() {
@@ -51,7 +49,6 @@ public class mainScript : Node2D
         if (!isConnected) {
             startWs();
         }
-        //isConnected = !isConnected;
         updateButton();
     }
 

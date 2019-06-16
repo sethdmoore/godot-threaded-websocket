@@ -8,7 +8,12 @@ public class WebSocketThread : Node
 
     chat log = new chat();
     TextEdit wsURI = new TextEdit();
-    mainScript main = new mainScript();
+
+    // Do not instantiate to avoid stack overflows
+    // EG: mainScript main = new MainScript(); // which calls 
+    // WebSocketThread websocket = new WebSocketThread(); // which calls
+    // mainScript main = new MainScript();
+    mainScript main;
 
     // signal callbacks
     private void SignalClientConnected(string msg) {
@@ -57,8 +62,10 @@ public class WebSocketThread : Node
 	public Error ConnectToWs() {
         Error connectErr;
         string uri;
-        uri = main.GetConnectionURI();
+        //uri = main.GetConnectionURI();
+        uri = "ws://localhost:4444";
         log.Println(String.Format("INFO: Connecting to {0}", uri));
+        GD.Print("I was called\n");
         try {
             connectErr = client.ConnectToUrl(uri, null, false);
         } catch (Exception e) {
@@ -67,7 +74,7 @@ public class WebSocketThread : Node
         }
 
         if (connectErr != Error.Ok) {
-            GD.Print("ERROR: Connection error: " + connectErr);
+            log.Println("ERROR: Connection error: " + connectErr);
             return connectErr;
         }
 		return Error.Ok;
