@@ -5,9 +5,10 @@ using System.Text;
 public class mainScript : Node2D
 {
     chat ch = new chat();
-    TextEdit wsURI = new TextEdit();
+    Godot.TextEdit wsURI = new Godot.TextEdit();
     Button btn = new Button();
     WebSocketThread websocket = new WebSocketThread();
+    Thread wsThread = new Thread();
 
     bool isConnected;
 
@@ -18,11 +19,23 @@ public class mainScript : Node2D
         websocket = (WebSocketThread)GetNode("websocket");
         btn = (Button)GetNode("MarginContainer/VBoxContainer/HBoxContainer/Button");
         isConnected = false;
-        wsURI = (TextEdit)GetNode("MarginContainer/VBoxContainer/ConnectInfo/TextEdit");
+        wsURI = (Godot.TextEdit)GetNode("MarginContainer/VBoxContainer/HBoxContainer/TextEdit");
+        //var foo =               GetNode("MarginContainer/VBoxContainer/HBoxContainer/TextEdit");
+        ch.Println(wsURI.GetType().ToString());
+        //wsURI.Text;
 
         // update state of button
         updateButton();
 
+    }
+
+    private void startWs() {
+        //wsThread.Start(websocket, "ConnectToWs", wsURI.Text, 1);
+        wsThread.Start(websocket, "ConnectToWs", wsURI.Text, 1);
+    }
+
+    public string GetConnectionURI() {
+        return wsURI.Text;
     }
 
     private void updateButton() {
@@ -35,7 +48,14 @@ public class mainScript : Node2D
 
     private void _on_Button_button_up()
     {
-        isConnected = !isConnected;
+        if (!isConnected) {
+            startWs();
+        }
+        //isConnected = !isConnected;
+        updateButton();
+    }
+
+    public override void _Process(float delta) {
         updateButton();
     }
 }

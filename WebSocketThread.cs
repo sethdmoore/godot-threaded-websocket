@@ -8,6 +8,7 @@ public class WebSocketThread : Node
 
     chat log = new chat();
     TextEdit wsURI = new TextEdit();
+    mainScript main = new mainScript();
 
     // signal callbacks
     private void SignalClientConnected(string msg) {
@@ -53,8 +54,10 @@ public class WebSocketThread : Node
         }
     }
 
-	public Error ConnectToWs(string uri) {
+	public Error ConnectToWs() {
         Error connectErr;
+        string uri;
+        uri = main.GetConnectionURI();
         log.Println(String.Format("INFO: Connecting to {0}", uri));
         try {
             connectErr = client.ConnectToUrl(uri, null, false);
@@ -72,7 +75,8 @@ public class WebSocketThread : Node
 
     public override void _Ready()
     {
-        log = (chat)GetTree().GetRoot().GetNode("MarginContainer/VBoxContainer/chat");
+        log = (chat)GetNode("/root/main/MarginContainer/VBoxContainer/chat");
+        main = (mainScript)GetNode("/root/main");
 
         client.Connect("connection_established", this, nameof(SignalClientConnected));
         client.Connect("connection_error", this, nameof(SignalClientError));

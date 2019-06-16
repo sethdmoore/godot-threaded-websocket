@@ -38,7 +38,7 @@ margin_right = 1069.0
 margin_bottom = 20.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
-text = "ws://catharsisgaming.com:4444"
+text = "ws://localhost:4444"
 
 [node name="Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 margin_left = 1073.0
