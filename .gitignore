@@ -1,0 +1,6 @@
+.mono/
+.import/
+.vs
+export.cfg
+export_presets.cfg
+mono_crash.*

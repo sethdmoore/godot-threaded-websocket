@@ -1,0 +1,55 @@
+[gd_scene load_steps=4 format=2]
+
+[ext_resource path="res://mainScript.cs" type="Script" id=1]
+[ext_resource path="res://components/chat.tscn" type="PackedScene" id=2]
+[ext_resource path="res://WebSocketThread.cs" type="Script" id=3]
+
+[node name="main" type="Node2D"]
+script = ExtResource( 1 )
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 1230.0
+margin_bottom = 670.0
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer"]
+margin_right = 1180.0
+margin_bottom = 620.0
+columns = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+margin_right = 1180.0
+margin_bottom = 620.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="chat" parent="MarginContainer/VBoxContainer" instance=ExtResource( 2 )]
+margin_right = 1180.0
+margin_bottom = 596.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+margin_top = 600.0
+margin_right = 1180.0
+margin_bottom = 620.0
+
+[node name="TextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+margin_right = 1069.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "ws://catharsisgaming.com:4444"
+
+[node name="Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+margin_left = 1073.0
+margin_right = 1180.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1
+text = "Connect"
+
+[node name="websocket" type="Node" parent="."]
+script = ExtResource( 3 )
+
+[connection signal="button_up" from="MarginContainer/VBoxContainer/HBoxContainer/Button" to="." method="_on_Button_button_up"]
