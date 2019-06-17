@@ -4,44 +4,50 @@ using System.Text;
 
 public class WebSocketThread : Node {
     private WebSocketClient client = new WebSocketClient();
-    private mainScript main;
     public bool IsPolling {get; set;}
-    private string foo;
-    private int constructorCount = 0;
+    private string wsUri;
 
     private static NetworkedMultiplayerPeer.ConnectionStatus lastConnStatus;
 
+    // This signal is used to print out to the parent thread
+    [Signal]
+    public delegate string SignalSendMessage();
+
+    [Signal]
+    public delegate string SignalReturnStringPacket();
+
+    [Signal]
+    public delegate byte[] SignalReturnBytePacket();
+
     // Constructor
-    public WebSocketThread(mainScript m) {
+    public WebSocketThread(string uri) {
         client.Connect("connection_established", this, nameof(SignalClientConnected));
         client.Connect("connection_error", this, nameof(SignalClientError));
         client.Connect("connection_closed", this, nameof(SignalClientClosed));
         client.Connect("server_close_request", this, nameof(SignalServerCloseRequest));
         client.Connect("data_received", this, nameof(SignalPacketReceived));
 
-        main = m;
-        constructorCount += 1;
         lastConnStatus = Godot.NetworkedMultiplayerPeer.ConnectionStatus.Disconnected;
-        GD.Print(string.Format("TEST {0}", constructorCount));
+        wsUri = uri;
     }
 
     // signal callbacks
     private void SignalClientConnected(string msg) {
-        main.Println("Thread: INFO: Client connected, connection status: " + msg);
+        EmitSignal(nameof(SignalSendMessage), "INFO: Client connected, connection status: " + msg);
     }
 
     private void SignalServerCloseRequest() {
-        main.Println("Thread: WARN: Closing connection by request of server");
+        EmitSignal(nameof(SignalSendMessage), "WARN: Closing connection by request of server");
         StopThread();
     }
 
     private void SignalClientClosed(bool cleanClose) {
-        main.Println("Thread: INFO: Connection Closed.");
+        EmitSignal(nameof(SignalSendMessage), "INFO: Connection Closed.");
         StopThread();
     }
 
     private void SignalClientError() {
-        main.Println("Thread: Warn: Connection error.");
+        EmitSignal(nameof(SignalSendMessage), "Warn: Connection error.");
         StopThread();
     }
 
@@ -51,28 +57,28 @@ public class WebSocketThread : Node {
 
     private void SignalPacketReceived() {
         Encoding toText = Encoding.UTF8;
-        Boolean isString = false;
         byte[] packet;
 
         try {
-            packet = client.GetPeer(1).GetPacket(); 
+            packet = client.GetPeer(1).GetPacket();
         } catch (Exception e) {
-            main.Println(String.Format("Thread: ERROR: Could not GetPacket(): {0}", e.ToString()));
+            EmitSignal(nameof(SignalSendMessage), String.Format("ERROR: Could not GetPacket(): {0}", e.ToString()));
             return;
         }
 
-        // not sure if this is necessary, as WasStringPacket returns a bool
+        // not sure if this try is necessary, as WasStringPacket returns a bool
         try {
-            isString = client.GetPeer(1).WasStringPacket();
+            if (client.GetPeer(1).WasStringPacket()) {
+                string msg;
+                msg = toText.GetString(packet);
+                EmitSignal(nameof(SignalReturnStringPacket), msg);
+            } else {
+                EmitSignal(nameof(SignalReturnBytePacket), packet);
+            }
         } catch (Exception e) {
-            main.Println(String.Format("Thread: ERROR: Couldn't tell type of packet: {0}", e.ToString()));
+            EmitSignal(nameof(SignalSendMessage), String.Format("ERROR: Couldn't tell type of packet: {0}", e.ToString()));
         }
 
-        if (isString) {
-            string msg;
-            msg = toText.GetString(packet);
-            main.Println(msg);
-        }
     }
 
     public void Init() {
@@ -80,61 +86,55 @@ public class WebSocketThread : Node {
 
         var err = ConnectToWs();
         if (err != Godot.Error.Ok) {
-            main.Println(String.Format("Thread: ERROR: {0}",  err));
-            main.Println("Thread: stopped");
+            EmitSignal(nameof(SignalSendMessage), String.Format("ERROR: Init: {0} -- stopped",  err));
             return;
         }
 
         IsPolling = true;
-        main.CallBack();
 
         while (IsPolling) {
-            //main.Println("wat");
+            //SignalSendMessage("wat");
             try {
                 status = client.GetConnectionStatus();
             } catch (Exception e) {
-                main.Println(String.Format("ERROR: Unhandled exception when calling GetConnectionStatus(): {0}", e.ToString()));
-                main.Println("THREAD: OK EXITING");
+                EmitSignal(nameof(SignalSendMessage),String.Format("ERROR: Unhandled exception when calling GetConnectionStatus(): {0}", e.ToString()));
+                EmitSignal(nameof(SignalSendMessage),"THREAD: OK EXITING");
                 StopThread();
                 break;
             }
 
             if (status != lastConnStatus) {
                 lastConnStatus = status;
-                main.Println("INFO: ConnectionStatus Change: " + Enum.GetName(typeof(WebSocketClient.ConnectionStatus), status));
+                EmitSignal(nameof(SignalSendMessage),"INFO: ConnectionStatus Change: " + Enum.GetName(typeof(WebSocketClient.ConnectionStatus), status));
             }
 
             try {
                 client.Poll();
             } catch (Exception e) {
-                main.Println(String.Format("ERROR: Exception polling ws: {0}", e.ToString()));
+                EmitSignal(nameof(SignalSendMessage),String.Format("ERROR: Exception polling ws: {0}", e.ToString()));
                 StopThread();
                 break;
             }
         }
 
-        main.isConnected = false;
-        main.Println("Thread: Stopped");
+        EmitSignal(nameof(SignalSendMessage),"Stopped");
     }
 
-	public Error ConnectToWs() {
+	private Error ConnectToWs() {
         Error connectErr;
-        string uri;
 
         IsPolling = true;
-        main.CallBack();
 
-        uri = main.GetConnectionURI();
-        main.Println(String.Format("Thread: INFO: Connecting to {0}", uri));
+        EmitSignal(nameof(SignalSendMessage),String.Format("INFO: Connecting to {0}", wsUri));
         try {
-            connectErr = client.ConnectToUrl(uri, null, false);
+            connectErr = client.ConnectToUrl(wsUri, null, false);
         } catch (Exception e) {
-            main.Println(String.Format("Thread: ERROR: Could not connect to chat!: {0}", e.ToString()));
+            EmitSignal(nameof(SignalSendMessage),String.Format("ERROR: Could not connect to chat!: {0}", e.ToString()));
             return Error.Failed;
         }
 
         if (connectErr != Error.Ok) {
-            main.Println("Thread: ERROR: Connection error: " + connectErr);
+            EmitSignal(nameof(SignalSendMessage),"ERROR: Connection error: " + connectErr);
             return connectErr;
         }
 		return Error.Ok;

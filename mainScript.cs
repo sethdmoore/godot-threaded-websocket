@@ -13,29 +13,36 @@ public class mainScript : Node2D
     private Godot.Error wsThreadError;
     string checkInstanceOf;
 
-    public bool isConnected;
 
     public override void _Ready()
     {
         ch = (chat)GetNode("MarginContainer/VBoxContainer/chat");
         btn = (Button)GetNode("MarginContainer/VBoxContainer/HBoxContainer/Button");
 
-        isConnected = false;
         wsURI = (Godot.TextEdit)GetNode("MarginContainer/VBoxContainer/HBoxContainer/TextEdit");
         ch.Println(wsURI.GetType().ToString());
         ch.Println("Ready");
         checkInstanceOf = "Blahblah";
 
         // Instantiate websocket with a reference to calling class
-        websocket = new WebSocketThread(this);
+        websocket = NewWebSocketThread();
         // this must come after
-        wsThreadControl = NewWsThread();
+        wsThreadControl = NewWsThreadControl();
 
         updateButton();
-
     }
 
-    private System.Threading.Thread NewWsThread() {
+    private WebSocketThread NewWebSocketThread() {
+        WebSocketThread ws;
+        ws = new WebSocketThread(GetConnectionURI());
+        // wire connections
+        ws.Connect("SignalSendMessage", this, nameof(Println));
+        ws.Connect("SignalReturnStringPacket", this, nameof(TextPkt));
+        // new thread control
+        return ws;
+    }
+
+    private System.Threading.Thread NewWsThreadControl() {
         return new System.Threading.Thread(new ThreadStart(websocket.Init));
     }
 
@@ -47,20 +54,15 @@ public class mainScript : Node2D
             wsThreadControl.Join();
         }
         // new websocket object (reset)
-        websocket = new WebSocketThread(this);
+        websocket = NewWebSocketThread();
         // new thread control
-        wsThreadControl = NewWsThread();
+        wsThreadControl = NewWsThreadControl();
         // start the method
         wsThreadControl.Start();
     }
 
     public string GetConnectionURI() {
         return wsURI.Text;
-    }
-
-    public void CallBack() {
-        ch.Println(String.Format("Callback from thread. {0}", checkInstanceOf));
-        isConnected = true;
     }
 
     private void updateButton() {
@@ -74,6 +76,10 @@ public class mainScript : Node2D
     public void Println(string msg) {
         ch.Println(msg);
     }
+    
+    public void TextPkt(string msg) {
+        ch.Println("Text Packet: " + msg);
+    }
 
     private void _on_Button_button_up()
     {
@@ -84,7 +90,7 @@ public class mainScript : Node2D
             websocket.StopThread();
             // block until we return
             wsThreadControl.Join();
-            wsThreadControl = NewWsThread();
+            wsThreadControl = NewWsThreadControl();
         }
         updateButton();
     }
