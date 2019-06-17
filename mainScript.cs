@@ -76,7 +76,7 @@ public class mainScript : Node2D
     public void Println(string msg) {
         ch.Println(msg);
     }
-    
+
     public void TextPkt(string msg) {
         ch.Println("Text Packet: " + msg);
     }
